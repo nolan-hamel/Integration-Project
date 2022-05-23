@@ -24,7 +24,10 @@ async function connectToDB() {
   }
 }
 connectToDB().catch(console.error);
-const users = client.db("Integration_DB").collection("Users");
+
+getUsers() = async() => {
+  return client.db("Integration_DB").collection("Users");
+};
 
 
 app.use(express.static(path.join(__dirname,'/public')))
@@ -44,7 +47,7 @@ app.get('/authenticate/:token', async (req, res) => {
   try{
     // let decoded = jwt.decode(req.params.token);
     // let users = Object.values(decoded);
-    let user = await users.find({username : "NOHAM"}).toArray();
+    let user = await getUsers().find({username : "NOHAM"}).toArray();
 
     console.log(user);
   
