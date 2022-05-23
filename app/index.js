@@ -31,7 +31,7 @@ const users = client.db("Integration_DB").collection("Users");
 
 app.use(express.static(path.join(__dirname,'/public')))
 
-app.get('/', function(req, res) {
+app.get('/', async function(req, res) {
   try {
     res.sendFile(path.join(__dirname, '/public/index.html'));
   } catch (e) {
@@ -59,11 +59,11 @@ app.get('/authenticate/:token', async (req, res) => {
   res.send(response)
 })
 
-app.get('/loads', (req, res) => {
+app.get('/loads', async (req, res) => {
   
 })
 
-app.put('/messages/:handle', (req, res) => {
+app.put('/messages/:handle', async (req, res) => {
   
 })
 
