@@ -17,7 +17,6 @@ const client = new MongoClient(uri);
 async function connectToDB() {
   try {
     await client.connect();
-
     const users = client.db("Integration_DB").collection("Users");
     let user = await users.find({username : "NOHAM"}).toArray();
     console.log(user);
