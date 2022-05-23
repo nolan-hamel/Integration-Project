@@ -43,20 +43,26 @@ app.get('/', async function(req, res) {
 
 app.get('/authenticate/:token', async (req, res) => {
   if(!authorized(req.params["Eleos-Platform-Key"])){ res.status(401).end(); }
-  let decoded = jwt.decode(req.params.token);
-  //let users = Object.values(decoded);
-  let user = await users.find({username : "NOHAM"}).toArray();
-
-  const response = { 
-    full_name : user.full_name,
-    api_token : 1234,
-    menu_code : user.menu_code,
-    dashboard_code : user.dashboard_code,
-    custom_settings_form_code : user.custom_settings_form_code,
-    username : user.username 
+  try{
+    // let decoded = jwt.decode(req.params.token);
+    // let users = Object.values(decoded);
+    let user = await users.find({username : "NOHAM"}).toArray();
+  
+    const response = { 
+      full_name : user.full_name,
+      api_token : 1234,
+      menu_code : user.menu_code,
+      dashboard_code : user.dashboard_code,
+      custom_settings_form_code : user.custom_settings_form_code,
+      username : user.username 
+    }
+    console.log(response)
+    res.send(response)
+  } catch(e) {
+    console.error(err);
+    res.send("Error: " + err);
   }
-  console.log(response)
-  res.send(response)
+  
 })
 
 app.get('/loads', async (req, res) => {
