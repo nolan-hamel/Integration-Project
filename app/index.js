@@ -46,10 +46,10 @@ app.get('/authenticate/:token', async (req, res) => {
   let decoded = jwt.decode(req.params.token);
   //let users = Object.values(decoded);
   let user = await users.find({username : "NOHAM"}).toArray();
-  
+
   const response = { 
     full_name : user.full_name,
-    api_token : encoded,
+    api_token : 1234,
     menu_code : user.menu_code,
     dashboard_code : user.dashboard_code,
     custom_settings_form_code : user.custom_settings_form_code,
