@@ -42,7 +42,7 @@ app.get('/', async function(req, res) {
 
 
 app.get('/authenticate/:token', async (req, res) => {
-  if(!authorized(req.params["Eleos-Platform-Key"])){ res.status(401).end(); }
+  // if(!authorized(req.params["Eleos-Platform-Key"])){ res.status(401).end(); }
   try{
     // let decoded = jwt.decode(req.params.token);
     // let users = Object.values(decoded);
