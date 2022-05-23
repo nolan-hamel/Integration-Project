@@ -25,8 +25,8 @@ async function connectToDB() {
 }
 connectToDB().catch(console.error);
 
-const user = client.db("Integration_DB").collection("Users").find({username : "NOHAM"}).toArray();
-
+const users = client.db("Integration_DB").collection("Users");
+const user = await users.find({username : "NOHAM"}).toArray();
 
 app.use(express.static(path.join(__dirname,'/public')))
 
