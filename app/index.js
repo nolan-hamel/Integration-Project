@@ -46,7 +46,7 @@ app.get('/authenticate/:token', async (req, res) => {
   try{
     // let decoded = jwt.decode(req.params.token);
     // let users = Object.values(decoded);
-    let user = JSON.stringify(await users.find({username : "NOHAM"}).toArray());
+    let user = await users.find({username : "NOHAM"}).toArray();
 
     console.log(user);
   
@@ -61,8 +61,8 @@ app.get('/authenticate/:token', async (req, res) => {
     console.log(response)
     res.send(response)
   } catch(e) {
-    console.error(err);
-    res.send("Error: " + err);
+    console.error(e);
+    res.send("Error: " + e);
   }
 })
 
