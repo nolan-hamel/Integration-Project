@@ -25,8 +25,11 @@ async function connectToDB() {
 }
 connectToDB().catch(console.error);
 
-const users = client.db("Integration_DB").collection("Users");
-const user = await users.find({username : "NOHAM"}).toArray();
+async function getUser(user_name) {
+  const users = client.db("Integration_DB").collection("Users");
+  return await users.find({username : user_name}).toArray();
+}
+
 
 app.use(express.static(path.join(__dirname,'/public')))
 
@@ -47,7 +50,7 @@ app.get('/authenticate/:token', async (req, res) => {
     // let users = Object.values(decoded);
     // let user = await users.find({username : "NOHAM"}).toArray();
 
-
+    let user = getUser("NOHAM");
     console.log(user);
   
     const response = { 
