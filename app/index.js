@@ -51,7 +51,7 @@ app.get('/authenticate/:token', async (req, res) => {
     // let users = Object.values(decoded);
     // let user = await users.find({username : "NOHAM"}).toArray();
 
-    let user = getUser("NOHAM");
+    let user = await getUser("NOHAM");
     console.log(user);
   
     const response = { 
