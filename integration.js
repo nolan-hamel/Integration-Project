@@ -32,7 +32,7 @@ connectToDB().catch(console.error);
 app.get('/authenticate/:token', (req, res) => {
   if(!authorized(req.params["Eleos-Platform-Key"])){ res.status(401).end(); }
   let user_token = jwt.decode(req.params.token);
-  
+  return user_token;
 })
 
 app.get('/loads', (req, res) => {
