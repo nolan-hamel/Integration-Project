@@ -27,7 +27,8 @@ connectToDB().catch(console.error);
 
 async function getUser(user_name) {
   const users = client.db("Integration_DB").collection("Users");
-  return await users.find({username : user_name}).toArray();
+  let user = await users.find({username : user_name}).toArray();
+  return user;
 }
 
 
