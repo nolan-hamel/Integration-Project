@@ -29,6 +29,8 @@ async function connectToDB() {
 }
 connectToDB().catch(console.error);
 
+app.use(express.static(path.join(__dirname,'/public')))
+
 app.get('/', function(req, res) {
   try {
     res.sendFile(path.join(__dirname, '/public/index.html'));
