@@ -28,13 +28,20 @@ connectToDB().catch(console.error);
 async function getUser(user_name) {
   const users = client.db("Integration_DB").collection("Users");
   let user = await users.find({username : user_name}).toArray();
-  return user;
+  return user[0];
 }
 
+async function getLoads(user_name) {
+  const loads = client.db("Integration_DB").collection("Loads");
+  let usersLoads = await loads.find({users: user_name}).toArray();
+  usersLoads.forEach(e => delete e._id);
+  usersLoads.forEach(e => delete e.users);
+  return usersLoads;
+}
 
 app.use(express.static(path.join(__dirname,'/public')))
 
-app.get('/', async function(req, res) {
+app.get('/', function (req, res) {
   try {
     res.sendFile(path.join(__dirname, '/public/index.html'));
   } catch (e) {
@@ -43,27 +50,32 @@ app.get('/', async function(req, res) {
   }
 })
 
+authorize = async(token) => {
+  // decode token
+  // let user =  await getUser("NOHAM");
+  // if(user.username == decoded username) return true
+  // return false
+}
+
 
 app.get('/authenticate/:token', async (req, res) => {
-  // if(!authorized(req.params["Eleos-Platform-Key"])){ res.status(401).end(); }
   try{
+    // if not authorized res.send('401');
+
     // let decoded = jwt.decode(req.params.token);
-    // let users = Object.values(decoded);
-    // let user = await users.find({username : "NOHAM"}).toArray();
 
     let user = await getUser("NOHAM");
-    console.log(user);
-  
-    const response = { 
+    let encoded = jwt.sign({full_name : user.full_name, username : user.username}, process.env.SECRET_KEY);
+    const response = {
       full_name : user.full_name,
-      api_token : 1234,
+      username : user.username,
+      api_token : encoded,
       menu_code : user.menu_code,
       dashboard_code : user.dashboard_code,
-      custom_settings_form_code : user.custom_settings_form_code,
-      username : user.username 
+      custom_settings_form_code : user.custom_settings_form_code
     }
-    console.log(response)
-    res.send(response)
+    console.log(response);
+    res.send(response);
   } catch(e) {
     console.error(e);
     res.send("Error: " + e);
@@ -71,11 +83,24 @@ app.get('/authenticate/:token', async (req, res) => {
 })
 
 app.get('/loads', async (req, res) => {
-  
+  try {
+    // if not authorized res.send('401');
+    let loads = await getLoads("NOHAM");
+    console.log(loads);
+    res.send(loads);
+  } catch(e) {
+    console.error(e);
+    res.send("Error: " + e);
+  }
 })
 
 app.put('/messages/:handle', async (req, res) => {
-  
+  try {
+    
+  } catch(e) {
+    console.error(e);
+    res.send("Error: " + e);
+  }
 })
 
 
