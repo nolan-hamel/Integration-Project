@@ -1,6 +1,7 @@
 const {MongoClient} = require('mongodb');
 var express = require('express');
 var app = express();
+const path = require('path');
 const jwt = require('jsonwebtoken');
 const res = require('express/lib/response');
 const dotenv = require('dotenv').config();
