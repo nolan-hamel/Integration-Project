@@ -2,6 +2,7 @@ const {MongoClient} = require('mongodb');
 var express = require('express');
 var app = express();
 const jwt = require('jsonwebtoken');
+const res = require('express/lib/response');
 const dotenv = require('dotenv').config();
 
 function authorized(key) {
@@ -28,7 +29,14 @@ async function connectToDB() {
 }
 connectToDB().catch(console.error);
 
-
+app.get('/', function(req, res) {
+  try {
+    res.sendFile(path.join(__dirname, '/public/index.html'));
+  } catch (e) {
+    console.error(e);
+    res.send("Error: " + e);
+  }
+})
 
 
 app.get('/authenticate/:token', (req, res) => {
