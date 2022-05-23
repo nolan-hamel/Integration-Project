@@ -23,19 +23,18 @@ async function connectToDB() {
     console.error(e);
   }
 }
-connectToDB().catch(console.error);
 
-async function getUser(user_name) {
+async function getUser(username) {
   const users = client.db("Integration_DB").collection("Users");
-  let user = await users.find({username : user_name}).toArray();
+  let user = await users.find({username : username}).toArray();
   return user[0];
 }
 
-async function getLoads(user_name) {
+async function getLoads(username) {
   const loads = client.db("Integration_DB").collection("Loads");
-  let usersLoads = await loads.find({users: user_name}).toArray();
-  usersLoads.forEach(e => delete e._id);
-  usersLoads.forEach(e => delete e.users);
+  let usersLoads = await loads.find({users: username}).toArray();
+  usersLoads.forEach(u => delete u._id);
+  usersLoads.forEach(u => delete u.users);
   return usersLoads;
 }
 
@@ -60,6 +59,7 @@ authorize = async(token) => {
 
 app.get('/authenticate/:token', async (req, res) => {
   try{
+    await connectToDB().catch(console.error);
     // if not authorized res.send('401');
 
     // let decoded = jwt.decode(req.params.token);
@@ -76,6 +76,7 @@ app.get('/authenticate/:token', async (req, res) => {
     }
     console.log(response);
     res.send(response);
+    client.close();
   } catch(e) {
     console.error(e);
     res.send("Error: " + e);
@@ -84,10 +85,12 @@ app.get('/authenticate/:token', async (req, res) => {
 
 app.get('/loads', async (req, res) => {
   try {
+    await connectToDB().catch(console.error);
     // if not authorized res.send('401');
-    let loads = await getLoads("NOHAM");
-    console.log(loads);
-    res.send(loads);
+    let response = await getLoads("NOHAM");
+    console.log(response);
+    res.send(response);
+    client.close();
   } catch(e) {
     console.error(e);
     res.send("Error: " + e);
@@ -96,7 +99,22 @@ app.get('/loads', async (req, res) => {
 
 app.put('/messages/:handle', async (req, res) => {
   try {
+    await connectToDB().catch(console.error);
+    let handle = req.params.handle;
+    let body = req.body;
+    let messages = client.db("Integration_DB").collection("Messages");
+    messages.insertOne({
+      handle : handle,
+      direction : body.direction,
+      username : body.username,
+      message_type : body.message_type,
+      body : body.body,
+      composed_at : body.composed_at,
+      platform_received_at : body.platform_received_at
+    })
     
+    res.send({handle : handle});
+    client.close();
   } catch(e) {
     console.error(e);
     res.send("Error: " + e);
