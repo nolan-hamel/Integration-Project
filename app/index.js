@@ -19,8 +19,6 @@ const client = new MongoClient(uri);
 async function connectToDB() {
   try {
     await client.connect();
-    const users = client.db("Integration_DB").collection("Users");
-    console.log(user);
   } catch (e) {
     console.error(e);
   } finally {
@@ -28,6 +26,8 @@ async function connectToDB() {
   }
 }
 connectToDB().catch(console.error);
+const users = client.db("Integration_DB").collection("Users");
+
 
 app.use(express.static(path.join(__dirname,'/public')))
 
