@@ -21,8 +21,6 @@ async function connectToDB() {
     await client.connect();
   } catch (e) {
     console.error(e);
-  } finally {
-    await client.close();
   }
 }
 connectToDB().catch(console.error);
