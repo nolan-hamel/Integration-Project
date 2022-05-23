@@ -20,7 +20,6 @@ async function connectToDB() {
   try {
     await client.connect();
     const users = client.db("Integration_DB").collection("Users");
-    let user = await users.find({username : "NOHAM"}).toArray();
     console.log(user);
   } catch (e) {
     console.error(e);
@@ -42,15 +41,22 @@ app.get('/', function(req, res) {
 })
 
 
-app.get('/authenticate/:token', (req, res) => {
+app.get('/authenticate/:token', async (req, res) => {
   if(!authorized(req.params["Eleos-Platform-Key"])){ res.status(401).end(); }
   let decoded = jwt.decode(req.params.token);
-  let users = Object.values(decoded);
-  let user = client.db("Integration_DB").collection("Users").find({username : "NOHAM"});
+  //let users = Object.values(decoded);
+  let user = await users.find({username : "NOHAM"}).toArray();
   
-  res.status(200).send({
-    full_name: user.full_name
-  });
+  const response = { 
+    full_name : user.full_name,
+    api_token : encoded,
+    menu_code : user.menu_code,
+    dashboard_code : user.dashboard_code,
+    custom_settings_form_code : user.custom_settings_form_code,
+    username : user.username 
+  }
+  console.log(response)
+  res.send(response)
 })
 
 app.get('/loads', (req, res) => {
