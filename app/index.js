@@ -47,16 +47,14 @@ async function getUsername(decoded) {
   } catch(e) {
     var username = "-1";
   }
+  var user = await getUser(username);
+  if(user == -1) {
+    // try with username
+    var username = decoded.username;
     var user = await getUser(username);
-    if(user == -1) {
-      // try with username
-      var username = decoded.username;
-      var user = await getUser(username);
-    }
-    if(user == -1) return user;
-    return user.username;
   }
-  
+  if(user == -1) return user;
+  return user.username;  
 }
 
 async function getLoads(username) {
