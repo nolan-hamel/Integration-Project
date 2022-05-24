@@ -146,6 +146,7 @@ app.get('/loads', async (req, res) => {
       return;
     }
     var decoded = jwt.decode(req.get("Authentication"));
+    console.log(req.headers)
 
     var username = await getUsername(decoded);
     // verify that user exists
