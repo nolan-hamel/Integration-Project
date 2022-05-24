@@ -10,8 +10,6 @@ const dotenv = require('dotenv').config();
 const urlParser = express.urlencoded();
 
 function authorized(key) {
-  console.log(process.env.ELEOS_PLATFORM_KEY);
-  console.log(key);
   if(key === process.env.ELEOS_PLATFORM_KEY) return true;
   return false;
 }
@@ -51,7 +49,7 @@ app.get('/', function (req, res) {
 })
 
 app.get('/authenticate/:token', async (req, res) => {
-  if(!authorized(req.get("Eleos-Platform-Key")))
+  if(authorized(req.get("Eleos-Platform-Key")))
   {
     res.status(400).send("400 Bad request");
     return;
