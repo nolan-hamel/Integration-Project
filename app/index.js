@@ -42,15 +42,21 @@ async function getUser(username) {
 
 async function getUsername(decoded) {
   // Try with schema link
-  var username = decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
-  var user = await getUser(username);
-  if(user == -1) {
-    // try with username
-    var username = decoded.username;
-    var user = await getUser(username);
+  try{
+    var username = decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
+  } catch(e) {
+    var username = "-1";
   }
-  if(user == -1) return user;
-  return user.username;
+    var user = await getUser(username);
+    if(user == -1) {
+      // try with username
+      var username = decoded.username;
+      var user = await getUser(username);
+    }
+    if(user == -1) return user;
+    return user.username;
+  }
+  
 }
 
 async function getLoads(username) {
