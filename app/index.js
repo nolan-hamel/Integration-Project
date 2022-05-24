@@ -89,7 +89,7 @@ app.get('/authenticate/:token', async (req, res) => {
     client.close();
   } catch(e) {
     console.error(e);
-    res.send("Error: " + e);
+    res.status(401).send("Error: " + e);
   }
 })
 
@@ -116,10 +116,10 @@ app.put('/messages/:handle', urlParser, async (req, res) => {
   if(authorized(req.get("Eleos-Platform-Key")))
   {
     let response = [{
-      description : "401 Unauthorized due to missing or invalid token and/or API key.",
-      code: "401"
+      description : "Error: 400 Bad Request",
+      code: "400"
     }]
-    res.status(401).send(response);
+    res.status(400).send(response);
     return;
   }
   try {
