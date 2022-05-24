@@ -4,6 +4,7 @@ var app = express();
 const path = require('path');
 const jwt = require('jsonwebtoken');
 const { get } = require('express/lib/response');
+const res = require('express/lib/response');
 const dotenv = require('dotenv').config();
 
 const urlParser = express.urlencoded();
@@ -29,6 +30,7 @@ async function connectToDB() {
 async function getUser(username) {
   const users = client.db("Integration_DB").collection("Users");
   let user = await users.find({username : username}).toArray();
+  if(user[0] == undefined) return -1;
   return user[0];
 }
 
@@ -60,11 +62,21 @@ authorize = async(token) => {
 app.get('/authenticate/:token', async (req, res) => {
   try{
     await connectToDB().catch(console.error);
-    // if not authorized res.send('401');
+    try{
+      var decoded = jwt.decode(req.params.token);
+    } catch(e) {
+      res.status(400).send("400 Bad request");
+      client.close();
+      return;
+    }
+    let username = decoded.username;
+    let user = await getUser(username);
+    if(user == -1) {
+      res.status(401).send("401 Unauthorized due to invalid username or password.");
+      client.close();
+      return;
+    }
 
-    // let decoded = jwt.decode(req.params.token);
-
-    let user = await getUser("NOHAM");
     let encoded = jwt.sign({full_name : user.full_name, username : user.username}, process.env.SECRET_KEY);
     const response = {
       full_name : user.full_name,
