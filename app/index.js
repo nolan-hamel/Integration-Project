@@ -51,7 +51,7 @@ app.get('/', function (req, res) {
 })
 
 app.get('/authenticate/:token', async (req, res) => {
-  if(!authorized(req.get("ELEOS_PLATFORM_KEY")))
+  if(!authorized(req.get("Eleos-Platform-Key")))
   {
     res.status(400).send("400 Bad request");
     return;
@@ -96,9 +96,8 @@ app.get('/authenticate/:token', async (req, res) => {
 })
 
 app.get('/loads', async (req, res) => {
-  if(!authorized(req.get("ELEOS_PLATFORM_KEY")))
+  if(!authorized(req.get("Eleos-Platform-Key")))
   {
-    console.log("Bad platform key");
     res.status(400).send("400 Bad request");
     return;
   }
@@ -116,7 +115,7 @@ app.get('/loads', async (req, res) => {
 })
 
 app.put('/messages/:handle', urlParser, async (req, res) => {
-  if(!authorized(req.get("ELEOS_PLATFORM_KEY")))
+  if(!authorized(req.get("Eleos-Platform-Key")))
   {
     res.status(400).send("400 Bad request");
     return;
