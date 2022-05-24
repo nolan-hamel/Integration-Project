@@ -9,11 +9,7 @@ const dotenv = require('dotenv').config();
 
 const urlParser = express.urlencoded();
 
-function authorized(key) {
-  if(key === process.env.ELEOS_PLATFORM_KEY) return true;
-  return false;
-}
-
+// Stuff we need to access the database
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@nolans-eleos-db.hlgtg.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri);
 async function connectToDB() {
@@ -24,6 +20,13 @@ async function connectToDB() {
   }
 }
 
+// Check provided key against validated eleos platform key
+function authorized(key) {
+  if(key === process.env.ELEOS_PLATFORM_KEY) return true;
+  return false;
+}
+
+// Confirm that the passed in token is indeed a JWT
 async function verifyToken(token) {
   try {
     jwt.decode(token);
@@ -33,6 +36,7 @@ async function verifyToken(token) {
   }
 }
 
+// Get a user's user info from their username
 async function getUser(username) {
   const users = client.db("Integration_DB").collection("Users");
   let user = await users.find({username : username}).toArray();
@@ -40,6 +44,7 @@ async function getUser(username) {
   return user[0];
 }
 
+// get a user's username from their decoded JWT
 async function getUsername(decoded) {
   // Try with schema link
   try{
@@ -57,6 +62,7 @@ async function getUsername(decoded) {
   return user.username;  
 }
 
+// get a user's loads from their username
 async function getLoads(username) {
   const loads = client.db("Integration_DB").collection("Loads");
   let usersLoads = await loads.find({users: username}).toArray();
@@ -65,6 +71,7 @@ async function getLoads(username) {
   return usersLoads;
 }
 
+// get a users's truck from their username
 async function getTruck(username) {
   console.log(username);
   const trucks = client.db("Integration_DB").collection("TruckStatus");
@@ -76,6 +83,7 @@ async function getTruck(username) {
   return truck;
 }
 
+// access the main webpage
 app.get('/', function (req, res) {
   try {
     res.sendFile(path.join(__dirname, '/public/index.html'));
@@ -85,14 +93,20 @@ app.get('/', function (req, res) {
   }
 })
 
+// Authenticate a user in the database based on api token
 app.get('/authenticate/:token', async (req, res) => {
+  // This is coming from Eleos, right?
   if(!authorized(req.get("Eleos-Platform-Key")))
   {
     res.status(400).send("400 Bad request");
     return;
   }
+
+  // Okay good. it is.
   try{
     await connectToDB().catch(console.error);
+
+    // Try to decode the token. If it fails its a bad request.
     try{
       var decoded = jwt.decode(req.params.token);
     } catch(e) {
@@ -100,19 +114,21 @@ app.get('/authenticate/:token', async (req, res) => {
       client.close();
       return;
     }
-    var username = decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
-    var user = await getUser(username);
-    if(user == -1) {
-      var username = decoded.username;
-      var user = await getUser(username);
-      if(user == -1) {
-        res.status(401).send("401 Unauthorized due to invalid username or password.");
-        client.close();
-        return;
-      }
+    // Extract the user's name
+    var username = await getUsername(decoded);
+    // Verify that the user exists
+    if(username == -1){
+      res.status(401).send("401 Unauthorized due to invalid username or password.");
+      client.close();
+      return;
     }
+    // Steal all their data
+    var user = await getUser(username);
 
+    // Generate api token for user
     let encoded = jwt.sign({full_name : user.full_name, username : user.username}, process.env.SECRET_KEY);
+
+    // Spit out user's data
     const response = {
       full_name : user.full_name,
       username : user.username,
@@ -124,50 +140,65 @@ app.get('/authenticate/:token', async (req, res) => {
     console.log(response);
     res.send(response);
     client.close();
+
   } catch(e) {
+    // uh oh! If we made it here we ran into a problem...
     console.error(e);
     res.status(401).send("Error: " + e);
   }
 })
 
+// Show all the loads of a specific user
 app.get('/loads', async (req, res) => {
+  // Confirm that this is Eleos making the request
   if(!authorized(req.get("Eleos-Platform-Key")))
   {
     res.status(400).send("400 Bad request");
     return;
   }
+
+  // Phew! It is Eleos!
   try {
     await connectToDB().catch(console.error);
 
-    // Verify key
+    // Verify user's authorization
     if(!verifyToken(req.get("authorization"))){
       res.status(400).send("400 Bad request");
       client.close();
       return;
     }
     let token = req.get("authorization");
+    // fix the weird formatting
     token = token.split("=").pop();
     var decoded = jwt.decode(token);
 
+    // What's their username?
     var username = await getUsername(decoded);
-    // verify that user exists
+    // Verify that this user exists
     if(username == -1){
       res.status(401).send("401 Unauthorized due to invalid username or password.");
       client.close();
       return;
     }
 
+    // Get a load of this!
     let response = await getLoads(username);
+
+    // Give Eleos all the data
     console.log(response);
     res.send(response);
     client.close();
+
   } catch(e) {
+    // We shouldn't be here, but here we are...
     console.error(e);
     res.send("Error: " + e);
   }
 })
 
+// Let users send messages to the database
 app.put('/messages/:handle', urlParser, async (req, res) => {
+  // Eleos? Is that you?
   if(!authorized(req.get("Eleos-Platform-Key")))
   {
     let response = {
@@ -177,12 +208,17 @@ app.put('/messages/:handle', urlParser, async (req, res) => {
     res.status(400).send(response);
     return;
   }
+
+  // Yes! It's Eleos!!!
   try {
     await connectToDB().catch(console.error);
+
+    // Store some important info about the message
     let handle = req.params.handle;
     let body = req.body;
     let messages = client.db("Integration_DB").collection("Messages");
-    console.log(body);
+
+    // Send user's important message to the database
     messages.insertOne({
       handle: handle,
       direction: body.direction,
@@ -192,50 +228,65 @@ app.put('/messages/:handle', urlParser, async (req, res) => {
       composed_at: body.composed_at,
       platform_received_at: body.platform_received_at
     })
-    
+
+    // Give the handle back to Eleos
     res.send({handle : handle});
+
   } catch(e) {
+    // We ran into a problem if we're down here.
     console.error(e);
     res.status(401).send("Error: " + e);
   }
 })
 
+// Keep on truckin'! Let's see the user's truck status.
 app.get('/truck', async (req, res) => {
+  // This is from Eleos, correct?
   if(!authorized(req.get("Eleos-Platform-Key")))
   {
     res.status(400).send("400 Bad request");
     return;
   }
+
+  // Indeed, it is!
   try {
     await connectToDB().catch(console.error);
 
-    // Verify key
+    // Verify the user's authorization
     if(!verifyToken(req.get("authorization"))){
       res.status(400).send("400 Bad request");
       client.close();
       return;
     }
     let token = req.get("authorization");
+    // Fix the silly formatting
     token = token.split("=").pop();
     var decoded = jwt.decode(token);
 
+    // Figure out who this user actually is
     var username = await getUsername(decoded);
-    // verify that user exists
+
+    // Verify that the user even exists
     if(username == -1){
       res.status(401).send("401 Unauthorized due to invalid username or password.");
       client.close();
       return;
     }
 
+    // Extract the user's truck info
     let truck = await getTruck(username);
+
+    // Send truck info back to Eleos
     console.log(truck);
     res.send(truck);
+
   } catch(e) {
+    // Something errant must have happened if we're down here...
     console.error(e);
     res.send("Error: " + e);
   }
 })
 
-
+// Listen out for anyone that needs to use any of the services
 app.listen(process.env.PORT || 3000, 
   () => console.log("The server is running!!!"));
