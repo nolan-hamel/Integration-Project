@@ -49,7 +49,7 @@ app.get('/', function (req, res) {
 })
 
 app.get('/authenticate/:token', async (req, res) => {
-  if(authorized(req.get("Eleos-Platform-Key")))
+  if(!authorized(req.get("Eleos-Platform-Key")))
   {
     res.status(400).send("400 Bad request");
     return;
@@ -113,9 +113,13 @@ app.get('/loads', async (req, res) => {
 })
 
 app.put('/messages/:handle', urlParser, async (req, res) => {
-  if(!authorized(req.get("Eleos-Platform-Key")))
+  if(authorized(req.get("Eleos-Platform-Key")))
   {
-    res.status(400).send("400 Bad request");
+    let response = [{
+      description : "401 Unauthorized due to missing or invalid token and/or API key.",
+      code: "401"
+    }]
+    res.status(401).send(response);
     return;
   }
   try {
@@ -137,7 +141,7 @@ app.put('/messages/:handle', urlParser, async (req, res) => {
     res.send({handle : handle});
   } catch(e) {
     console.error(e);
-    res.send("Error: " + e);
+    res.status(401).send("Error: " + e);
   }
 })
 
