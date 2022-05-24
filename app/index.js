@@ -24,11 +24,33 @@ async function connectToDB() {
   }
 }
 
+async function verifyToken(token) {
+  try {
+    jwt.decode(token);
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
+
 async function getUser(username) {
   const users = client.db("Integration_DB").collection("Users");
   let user = await users.find({username : username}).toArray();
   if(user[0] == undefined) return -1;
   return user[0];
+}
+
+async function getUsername(decoded) {
+  // Try with schema link
+  var username = decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
+  var user = await getUser(username);
+  if(user == -1) {
+    // try with username
+    var username = decoded.username;
+    var user = await getUser(username);
+  }
+  if(user == -1) return user;
+  return user.username;
 }
 
 async function getLoads(username) {
@@ -37,6 +59,17 @@ async function getLoads(username) {
   usersLoads.forEach(u => delete u._id);
   usersLoads.forEach(u => delete u.users);
   return usersLoads;
+}
+
+async function getTruck(username) {
+  console.log(username);
+  const trucks = client.db("Integration_DB").collection("TruckStatus");
+  let truck = await trucks.find({username: username}).toArray();
+  truck = truck[0];
+  delete truck._id;
+  delete truck.username;
+  Object.keys(truck).forEach(key => truck[key] === undefined ? delete truck[key] : {});
+  return truck;
 }
 
 app.get('/', function (req, res) {
@@ -68,11 +101,11 @@ app.get('/authenticate/:token', async (req, res) => {
     if(user == -1) {
       var username = decoded.username;
       var user = await getUser(username);
-    }
-    if(user == -1) {
-      res.status(401).send("401 Unauthorized due to invalid username or password.");
-      client.close();
-      return;
+      if(user == -1) {
+        res.status(401).send("401 Unauthorized due to invalid username or password.");
+        client.close();
+        return;
+      }
     }
 
     let encoded = jwt.sign({full_name : user.full_name, username : user.username}, process.env.SECRET_KEY);
@@ -101,8 +134,24 @@ app.get('/loads', async (req, res) => {
   }
   try {
     await connectToDB().catch(console.error);
-    // if not authorized res.send('401');
-    let response = await getLoads("NOHAM");
+
+    // Verify key
+    if(!jwt.verify(req.get("Authentication"))){
+      res.status(400).send("400 Bad request");
+      client.close();
+      return;
+    }
+    var decoded = jwt.decode(req.get("Authentication"));
+
+    var username = await getUsername(decoded);
+    // verify that user exists
+    if(username == -1){
+      res.status(401).send("401 Unauthorized due to invalid username or password.");
+      client.close();
+      return;
+    }
+
+    let response = await getLoads(username);
     console.log(response);
     res.send(response);
     client.close();
@@ -142,6 +191,42 @@ app.put('/messages/:handle', urlParser, async (req, res) => {
   } catch(e) {
     console.error(e);
     res.status(401).send("Error: " + e);
+  }
+})
+
+app.get('/truck', async (req, res) => {
+  if(!authorized(req.get("Eleos-Platform-Key")))
+  {
+    res.status(400).send("400 Bad request");
+    return;
+  }
+  try {
+    await connectToDB().catch(console.error);
+
+    // console.log(req.headers()); /////////////////////////////
+
+    // Verify key
+    if(!verifyToken(req.get("Authentication"))){
+      res.status(400).send("400 Bad request");
+      client.close();
+      return;
+    }
+    var decoded = jwt.decode(req.get("Authentication"));
+
+    var username = await getUsername(decoded);
+    // verify that user exists
+    if(username == -1){
+      res.status(401).send("401 Unauthorized due to invalid username or password.");
+      client.close();
+      return;
+    }
+
+    let truck = await getTruck(username);
+    console.log(truck);
+    res.send(truck);
+  } catch(e) {
+    console.error(e);
+    res.send("Error: " + e);
   }
 })
 
