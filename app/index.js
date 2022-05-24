@@ -136,7 +136,7 @@ app.get('/loads', async (req, res) => {
     await connectToDB().catch(console.error);
 
     // Verify key
-    if(!jwt.verify(req.get("Authentication"))){
+    if(!verifyToken(req.get("Authentication"))){
       res.status(400).send("400 Bad request");
       client.close();
       return;
