@@ -69,8 +69,12 @@ app.get('/authenticate/:token', async (req, res) => {
       client.close();
       return;
     }
-    let username = decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
-    let user = await getUser(username);
+    var username = decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
+    var user = await getUser(username);
+    if(user == -1) {
+      var username = decoded.username;
+      var user = await getUser(username);
+    }
     if(user == -1) {
       res.status(401).send("401 Unauthorized due to invalid username or password.");
       client.close();
