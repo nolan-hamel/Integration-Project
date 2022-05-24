@@ -113,12 +113,12 @@ app.get('/loads', async (req, res) => {
 })
 
 app.put('/messages/:handle', urlParser, async (req, res) => {
-  if(authorized(req.get("Eleos-Platform-Key")))
+  if(!authorized(req.get("Eleos-Platform-Key")))
   {
-    let response = [{
+    let response = {
       description : "Error: 400 Bad Request",
       code: "400"
-    }]
+    }
     res.status(400).send(response);
     return;
   }
