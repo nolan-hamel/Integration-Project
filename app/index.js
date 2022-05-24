@@ -10,12 +10,9 @@ const dotenv = require('dotenv').config();
 const urlParser = express.urlencoded();
 
 function authorized(key) {
-  console.log(process.env.ELEOS_PLATFORM_KEY)
-  console.log(key);
   if(key === process.env.ELEOS_PLATFORM_KEY) return true;
   return false;
 }
-
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@nolans-eleos-db.hlgtg.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri);
@@ -51,15 +48,12 @@ app.get('/', function (req, res) {
   }
 })
 
-authorize = async(token) => {
-  // decode token
-  // let user =  await getUser("NOHAM");
-  // if(user.username == decoded username) return true
-  // return false
-}
-
-
 app.get('/authenticate/:token', async (req, res) => {
+  if(!authorized(req.get("ELEOS_PLATFORM_KEY")))
+  {
+    res.status(400).send("400 Bad request");
+    return;
+  }
   try{
     await connectToDB().catch(console.error);
     try{
@@ -100,6 +94,11 @@ app.get('/authenticate/:token', async (req, res) => {
 })
 
 app.get('/loads', async (req, res) => {
+  if(!authorized(req.get("ELEOS_PLATFORM_KEY")))
+  {
+    res.status(400).send("400 Bad request");
+    return;
+  }
   try {
     await connectToDB().catch(console.error);
     // if not authorized res.send('401');
@@ -114,6 +113,11 @@ app.get('/loads', async (req, res) => {
 })
 
 app.put('/messages/:handle', urlParser, async (req, res) => {
+  if(!authorized(req.get("ELEOS_PLATFORM_KEY")))
+  {
+    res.status(400).send("400 Bad request");
+    return;
+  }
   try {
     await connectToDB().catch(console.error);
     let handle = req.params.handle;
