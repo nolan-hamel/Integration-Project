@@ -140,12 +140,14 @@ app.get('/loads', async (req, res) => {
     await connectToDB().catch(console.error);
 
     // Verify key
-    if(!verifyToken(req.get("Authentication"))){
+    if(!verifyToken(req.get("authorization"))){
       res.status(400).send("400 Bad request");
       client.close();
       return;
     }
-    var decoded = jwt.decode(req.get("Authentication"));
+    let token = req.get("authorization");
+    token = token.split("=").pop();
+    var decoded = jwt.decode(token);
     console.log(req.headers)
 
     var username = await getUsername(decoded);
