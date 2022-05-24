@@ -3,8 +3,10 @@ var express = require('express');
 var app = express();
 const path = require('path');
 const jwt = require('jsonwebtoken');
-const res = require('express/lib/response');
+const { get } = require('express/lib/response');
 const dotenv = require('dotenv').config();
+
+const urlParser = express.urlencoded();
 
 function authorized(key) {
   console.log(process.env.ELEOS_PLATFORM_KEY)
@@ -37,8 +39,6 @@ async function getLoads(username) {
   usersLoads.forEach(u => delete u.users);
   return usersLoads;
 }
-
-app.use(express.static(path.join(__dirname,'/public')))
 
 app.get('/', function (req, res) {
   try {
@@ -97,24 +97,24 @@ app.get('/loads', async (req, res) => {
   }
 })
 
-app.put('/messages/:handle', async (req, res) => {
+app.put('/messages/:handle', urlParser, async (req, res) => {
   try {
     await connectToDB().catch(console.error);
     let handle = req.params.handle;
     let body = req.body;
     let messages = client.db("Integration_DB").collection("Messages");
+    console.log(body);
     messages.insertOne({
-      handle : handle,
-      direction : body.direction,
-      username : body.username,
-      message_type : body.message_type,
-      body : body.body,
-      composed_at : body.composed_at,
-      platform_received_at : body.platform_received_at
+      handle: handle,
+      direction: body.direction,
+      username: body.username,
+      message_type: body.message_type,
+      body: body.body,
+      composed_at: body.composed_at,
+      platform_received_at: body.platform_received_at
     })
     
     res.send({handle : handle});
-    client.close();
   } catch(e) {
     console.error(e);
     res.send("Error: " + e);
