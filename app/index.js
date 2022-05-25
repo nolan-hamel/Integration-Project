@@ -365,7 +365,7 @@ app.put('/todos/:handle', urlParser, async (req, res) => {
     console.log(body);
     const filter = {handle: handle};
     const update = {$set: {"completed_at": body.completed_at}};
-    await messages.findOneAndUpdate(filter, update);
+    await console.log(messages.findOneAndUpdate(filter, update));
 
     // Send handle back to Eleos
     res.send({handle : handle});
