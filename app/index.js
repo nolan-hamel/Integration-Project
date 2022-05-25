@@ -359,15 +359,12 @@ app.put('/todos/:handle', urlParser, async (req, res) => {
     // Store some important info about the todo completion
     let handle = req.params.handle;
     let body = req.body;
-    let messages = client.db("Integration_DB").collection("Messages");
+    let todos = client.db("Integration_DB").collection("Todos");
 
     // Send user's completion time to databse
-    console.log(handle);
     const filter = {handle: body.handle};
-    console.log(filter);
     const update = {$set: {completed_at: body.completed_at}};
-    console.log(await messages.find(filter).toArray());
-    await messages.findOneAndUpdate(filter, update);
+    await todos.findOneAndUpdate(filter, update);
 
     // Send handle back to Eleos
     res.send({handle : handle});
