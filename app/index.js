@@ -7,7 +7,7 @@ const { get } = require('express/lib/response');
 const res = require('express/lib/response');
 const dotenv = require('dotenv').config();
 
-const urlParser = express.urlencoded();
+const jsonParser = express.json();
 
 // Stuff we need to access the database
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@nolans-eleos-db.hlgtg.mongodb.net/?retryWrites=true&w=majority`;
@@ -44,7 +44,7 @@ async function getUser(username) {
   return user[0];
 }
 
-// get a user's username from their decoded JWT
+// Get a user's username from their decoded JWT
 async function getUsername(decoded) {
   // Try with schema link
   try{
@@ -54,7 +54,7 @@ async function getUsername(decoded) {
   }
   var user = await getUser(username);
   if(user == -1) {
-    // try with username
+    // Try with username
     var username = decoded.username;
     var user = await getUser(username);
   }
@@ -62,7 +62,7 @@ async function getUsername(decoded) {
   return user.username;  
 }
 
-// get a user's loads from their username
+// Get a user's loads from their username
 async function getLoads(username) {
   const loads = client.db("Integration_DB").collection("Loads");
   let usersLoads = await loads.find({users: username}).toArray();
@@ -71,7 +71,7 @@ async function getLoads(username) {
   return usersLoads;
 }
 
-// get a users's truck from their username
+// Get a users's truck from their username
 async function getTruck(username) {
   console.log(username);
   const trucks = client.db("Integration_DB").collection("TruckStatus");
@@ -83,7 +83,7 @@ async function getTruck(username) {
   return truck;
 }
 
-// access the main webpage
+// Access the main webpage
 app.get('/', function (req, res) {
   try {
     res.sendFile(path.join(__dirname, '/public/index.html'));
@@ -139,7 +139,7 @@ app.get('/authenticate/:token', async (req, res) => {
     }
     console.log(response);
     res.send(response);
-    client.close();
+    await client.close();
 
   } catch(e) {
     // uh oh! If we made it here we ran into a problem...
@@ -187,7 +187,7 @@ app.get('/loads', async (req, res) => {
     // Give Eleos all the data
     console.log(response);
     res.send(response);
-    client.close();
+    await client.close();
 
   } catch(e) {
     // We shouldn't be here, but here we are...
@@ -197,7 +197,7 @@ app.get('/loads', async (req, res) => {
 })
 
 // Let users send messages to the database
-app.put('/messages/:handle', urlParser, async (req, res) => {
+app.put('/messages/:handle', jsonParser, async (req, res) => {
   // Eleos? Is that you?
   if(!authorized(req.get("Eleos-Platform-Key")))
   {
@@ -219,7 +219,7 @@ app.put('/messages/:handle', urlParser, async (req, res) => {
     let messages = client.db("Integration_DB").collection("Messages");
 
     // Send user's important message to the database
-    messages.insertOne({
+    await messages.insertOne({
       handle: handle,
       direction: body.direction,
       username: body.username,
@@ -231,6 +231,7 @@ app.put('/messages/:handle', urlParser, async (req, res) => {
 
     // Give the handle back to Eleos
     res.send({handle : handle});
+    await client.close();
 
   } catch(e) {
     // We ran into a problem if we're down here.
@@ -279,6 +280,7 @@ app.get('/truck', async (req, res) => {
     // Send truck info back to Eleos
     console.log(truck);
     res.send(truck);
+    await client.close();
 
   } catch(e) {
     // Something errant must have happened if we're down here...
