@@ -344,7 +344,7 @@ app.get('/todos', async (req, res) => {
 })
 
 // Allow a user to mark a todo item as completed
-app.put('/todos/:handle', async (req, res) => {
+app.put('/todos/:handle', urlParser, async (req, res) => {
   // Is this request from Eleos?
   if(!authorized(req.get("Eleos-Platform-Key")))
   {
@@ -363,7 +363,7 @@ app.put('/todos/:handle', async (req, res) => {
 
     // Send user's completion time to databse
     const filter = {handle: handle};
-    const update = {$set: {"completed_at": body.completed_at}};
+    const update = {completed_at: body.completed_at};
     await messages.findOneAndUpdate(filter, update);
 
     // Send handle back to Eleos
