@@ -40,7 +40,7 @@ async function verifyToken(token) {
 async function getUser(username) {
   const users = client.db("Integration_DB").collection("Users");
   let user = await users.find({username : username}).toArray();
-  if(user[0] == undefined) return -1;
+  if(user[0] == undefined) return null;
   return user[0];
 }
 
@@ -50,15 +50,15 @@ async function getUsername(decoded) {
   try{
     var username = decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
   } catch(e) {
-    var username = "-1";
+    var username = null;
   }
   var user = await getUser(username);
-  if(user == -1) {
+  if(user == null) {
     // Try with username
     var username = decoded.username;
     var user = await getUser(username);
   }
-  if(user == -1) return user;
+  if(user == null) return user;
   return user.username;  
 }
 
@@ -73,7 +73,6 @@ async function getLoads(username) {
 
 // Get a users's truck from their username
 async function getTruck(username) {
-  console.log(username);
   const trucks = client.db("Integration_DB").collection("TruckStatus");
   let truck = await trucks.find({username: username}).toArray();
   truck = truck[0];
@@ -83,13 +82,23 @@ async function getTruck(username) {
   return truck;
 }
 
+// Get a user's todo items from their username
+async function getTodos(username) {
+  const todos = client.db("Integration_DB").collection("Todos");
+  let usersTodos = await todos.find({username: username, completed_at: {$in: ["",undefined]} }).toArray();
+  usersTodos.forEach(u => delete u._id);
+  usersTodos.forEach(u => delete u.username);  
+  usersTodos.forEach(u => delete u.completed_at);
+  return usersTodos;
+}
+
 // Access the main webpage
 app.get('/', function (req, res) {
   try {
     res.sendFile(path.join(__dirname, '/public/index.html'));
   } catch (e) {
     console.error(e);
-    res.send("Error: " + e);
+    res.send("400 " + e);
   }
 })
 
@@ -98,7 +107,7 @@ app.get('/authenticate/:token', async (req, res) => {
   // This is coming from Eleos, right?
   if(!authorized(req.get("Eleos-Platform-Key")))
   {
-    res.status(400).send("400 Bad request");
+    res.status(401).send("401 Unauthorized due to missing or invalid token and/or API key.");
     return;
   }
 
@@ -110,14 +119,14 @@ app.get('/authenticate/:token', async (req, res) => {
     try{
       var decoded = jwt.decode(req.params.token);
     } catch(e) {
-      res.status(400).send("400 Bad request");
+      res.status(401).send("401 Unauthorized due to missing or invalid token and/or API key.");
       client.close();
       return;
     }
     // Extract the user's name
     var username = await getUsername(decoded);
     // Verify that the user exists
-    if(username == -1){
+    if(username == null){
       res.status(401).send("401 Unauthorized due to invalid username or password.");
       client.close();
       return;
@@ -144,7 +153,7 @@ app.get('/authenticate/:token', async (req, res) => {
   } catch(e) {
     // uh oh! If we made it here we ran into a problem...
     console.error(e);
-    res.status(401).send("Error: " + e);
+    res.status(400).send("400 " + e);
   }
 })
 
@@ -153,7 +162,7 @@ app.get('/loads', async (req, res) => {
   // Confirm that this is Eleos making the request
   if(!authorized(req.get("Eleos-Platform-Key")))
   {
-    res.status(400).send("400 Bad request");
+    res.status(401).send("401 Unauthorized due to missing or invalid token and/or API key.");
     return;
   }
 
@@ -163,7 +172,7 @@ app.get('/loads', async (req, res) => {
 
     // Verify user's authorization
     if(!verifyToken(req.get("authorization"))){
-      res.status(400).send("400 Bad request");
+      res.status(401).send("401 Unauthorized due to missing or invalid token and/or API key.");
       client.close();
       return;
     }
@@ -175,7 +184,7 @@ app.get('/loads', async (req, res) => {
     // What's their username?
     var username = await getUsername(decoded);
     // Verify that this user exists
-    if(username == -1){
+    if(username == null){
       res.status(401).send("401 Unauthorized due to invalid username or password.");
       client.close();
       return;
@@ -192,7 +201,7 @@ app.get('/loads', async (req, res) => {
   } catch(e) {
     // We shouldn't be here, but here we are...
     console.error(e);
-    res.send("Error: " + e);
+    res.status(400).send("400 " + e);
   }
 })
 
@@ -201,11 +210,7 @@ app.put('/messages/:handle', urlParser, async (req, res) => {
   // Eleos? Is that you?
   if(!authorized(req.get("Eleos-Platform-Key")))
   {
-    let response = {
-      description : "Error: 400 Bad Request",
-      code: "400"
-    }
-    res.status(400).send(response);
+    res.status(401).send("401 Unauthorized due to missing or invalid token and/or API key.");
     return;
   }
 
@@ -236,7 +241,7 @@ app.put('/messages/:handle', urlParser, async (req, res) => {
   } catch(e) {
     // We ran into a problem if we're down here.
     console.error(e);
-    res.status(401).send("Error: " + e);
+    res.status(400).send({description : "Error: 400 Bad Request", code: "400"});
   }
 })
 
@@ -245,7 +250,7 @@ app.get('/truck', async (req, res) => {
   // This is from Eleos, correct?
   if(!authorized(req.get("Eleos-Platform-Key")))
   {
-    res.status(400).send("400 Bad request");
+    res.status(401).send("401 Unauthorized due to missing or invalid token and/or API key.");
     return;
   }
 
@@ -255,7 +260,7 @@ app.get('/truck', async (req, res) => {
 
     // Verify the user's authorization
     if(!verifyToken(req.get("authorization"))){
-      res.status(400).send("400 Bad request");
+      res.status(401).send("401 Unauthorized due to missing or invalid token and/or API key.");
       client.close();
       return;
     }
@@ -268,7 +273,7 @@ app.get('/truck', async (req, res) => {
     var username = await getUsername(decoded);
 
     // Verify that the user even exists
-    if(username == -1){
+    if(username == null){
       res.status(401).send("401 Unauthorized due to invalid username or password.");
       client.close();
       return;
@@ -285,7 +290,90 @@ app.get('/truck', async (req, res) => {
   } catch(e) {
     // Something errant must have happened if we're down here...
     console.error(e);
-    res.send("Error: " + e);
+    res.send("400 " + e);
+  }
+})
+
+// Get the user's todo list
+app.get('/todos', async (req, res) => {
+    // Is this from Eleos?
+    if(!authorized(req.get("Eleos-Platform-Key")))
+    {
+      res.status(401).send("401 Unauthorized due to missing or invalid token and/or API key.");
+      return;
+    }
+  
+    // Yup, it is from Eleos!
+    try {
+      await connectToDB().catch(console.error);
+
+      // Verify the user's authorization
+      if(!verifyToken(req.get("authorization"))){
+        res.status(401).send("401 Unauthorized due to missing or invalid token and/or API key.");
+        client.close();
+        return;
+      }
+      let token = req.get("authorization");
+      // Get rid of what we don't need
+      token = token.split("=").pop();
+      var decoded = jwt.decode(token);
+
+      // Figure out who the user is
+      var username = await getUsername(decoded);
+
+      // Verify that the user exists
+      if(username == null){
+        res.status(401).send("401 Unauthorized due to invalid username or password.");
+        client.close();
+        return;
+      }
+
+      // Get the user's todo list
+      let todos = await getTodos(username);
+
+      // Send todos back to Eleos
+      console.log(todos);
+      res.send(todos);
+      await client.close();
+
+    } catch (e) {
+      // There must've been an issue if this code runs.
+      console.error(e);
+      res.status(400).send("400 " + e);
+    }
+})
+
+// Allow a user to mark a todo item as completed
+app.put('/todos/:handle', async (req, res) => {
+  // Is this request from Eleos?
+  if(!authorized(req.get("Eleos-Platform-Key")))
+  {
+    res.status(401).send("401 Unauthorized due to missing or invalid token and/or API key.");
+    return;
+  }
+
+  // Yes, it's from Eleos!
+  try {
+    await connectToDB().catch(console.error);
+
+    // Store some important info about the todo completion
+    let handle = req.params.handle;
+    let body = req.body;
+    let messages = client.db("Integration_DB").collection("Messages");
+
+    // Send user's completion time to databse
+    const filter = {handle: handle};
+    const update = {completed_at: body.completed_at};
+    messages.findOneAndUpdate(filter, update);
+
+    // Send handle back to Eleos
+    res.send({handle : handle});
+    await client.close();
+
+  } catch (e) {
+    // There must've been an issue if this code runs.
+    console.error(e);
+    res.status(400).send({description : "Error: 400 Bad Request", code: "400"});
   }
 })
 
