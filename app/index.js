@@ -7,7 +7,7 @@ const { get } = require('express/lib/response');
 const res = require('express/lib/response');
 const dotenv = require('dotenv').config();
 
-const jsonParser = express.json();
+const urlParser = express.urlencoded();
 
 // Stuff we need to access the database
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@nolans-eleos-db.hlgtg.mongodb.net/?retryWrites=true&w=majority`;
@@ -197,7 +197,7 @@ app.get('/loads', async (req, res) => {
 })
 
 // Let users send messages to the database
-app.put('/messages/:handle', jsonParser, async (req, res) => {
+app.put('/messages/:handle', urlParser, async (req, res) => {
   // Eleos? Is that you?
   if(!authorized(req.get("Eleos-Platform-Key")))
   {
@@ -219,7 +219,7 @@ app.put('/messages/:handle', jsonParser, async (req, res) => {
     let messages = client.db("Integration_DB").collection("Messages");
 
     // Send user's important message to the database
-    messages.insertOne({
+    await messages.insertOne({
       handle: handle,
       direction: body.direction,
       username: body.username,
