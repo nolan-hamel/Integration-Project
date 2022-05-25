@@ -362,8 +362,8 @@ app.put('/todos/:handle', urlParser, async (req, res) => {
     let messages = client.db("Integration_DB").collection("Messages");
 
     // Send user's completion time to databse
-    console.log(body);
-    const filter = {handle: handle};
+    console.log(handle);
+    const filter = {handle: body.handle};
     console.log(filter);
     const update = {$set: {completed_at: body.completed_at}};
     console.log(await messages.find(filter).toArray());
