@@ -364,7 +364,9 @@ app.put('/todos/:handle', urlParser, async (req, res) => {
     // Send user's completion time to databse
     console.log(body);
     const filter = {handle: handle};
+    console.log(filter);
     const update = {$set: {completed_at: body.completed_at}};
+    console.log(messages.find(filter).toArray());
     await messages.findOneAndUpdate(filter, update);
 
     // Send handle back to Eleos
