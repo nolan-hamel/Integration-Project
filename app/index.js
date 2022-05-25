@@ -219,7 +219,7 @@ app.put('/messages/:handle', jsonParser, async (req, res) => {
     let messages = client.db("Integration_DB").collection("Messages");
 
     // Send user's important message to the database
-    await messages.insertOne({
+    messages.insertOne({
       handle: handle,
       direction: body.direction,
       username: body.username,
